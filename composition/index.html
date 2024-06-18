@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platzicommerce</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h3>PlatziCommerce</h3>
+      <button class="cart" v-on:click="cartOpen = !cartOpen">Carro ({{ cart.length }})</button>
+      <div class="cart-content" v-show="cartOpen">
+        <div
+          v-for="(product, index) in cart"
+          :key="product.name"
+          class="cart-content__product"
+          :class="{ 'bg-gray': index & 1 }"
+        >
+          <img v-bind:src="product.images[0].thumbnail" :alt="product.name.toUpperCase()" />
+          <span>
+            {{ product.name }} - $ {{ new Intl.NumberFormat("es-CO").format(product.price *
+            product.quantity) }} ({{ product.quantity }})
+          </span>
+        </div>
+        <p>Total: $ {{ new Intl.NumberFormat("es-CO").format(total) }}</p>
+      </div>
+    </header>
+      
+    <div class="product-search">
+      <input
+        type="text"
+        placeholder="Buscar producto..."
+        v-model="filtro"
+      />
+    </div>
+    <main>
+      <product
+          v-for="product in filteredProducts"
+          :key="product.name"
+          :product="product"
+          @sendtocart="addToCart($event)"
+        ></product>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script>
+    const { createApp, ref, reactive, toRefs, watch, computed, onMounted } = Vue;
+
+    const app = createApp({
+      setup() {
+        const filtro = ref("");
+        const products = ref([]);
+        const cartState = reactive({
+          cartOpen: false,
+          cart: [],
+          //total: 0
+        });
+
+        const total = computed(() => {
+            return cartState.total = cartState.cart.reduce((prev, curr) => {
+                const prevPrice = prev.price || prev;
+                const prevQuantity = prev.quantity || 1;
+                return prevPrice * prevQuantity + curr.price * curr.quantity;
+              }, 0);
+        })
+
+        filteredProducts = computed(() => {
+            if (filtro.value != "") {
+              return products.value.filter((product) =>
+                product.name.toUpperCase().includes(filtro.value.toUpperCase())
+              );
+            }
+            return products.value;
+          });
+
+        function addToCart(product) {
+            const prodIndex = cartState.cart.findIndex(prod => prod.name === product.name);
+            if (prodIndex >= 0) {
+              cartState.cart[prodIndex].quantity += 1;
+            } else {
+              cartState.cart.push(product);
+            }
+            product.stock -= 1;
+          }
+
+          // watch(
+          //   cartState.cart,
+          //   (value, oldValue) => {
+          //     cartState.total = cartState.cart.reduce((prev, curr) => {
+          //       const prevPrice = prev.price || prev;
+          //       const prevQuantity = prev.quantity || 1;
+          //       return prevPrice * prevQuantity + curr.price * curr.quantity;
+          //     }, 0);
+          // })
+
+        onMounted(() => {
+          console.log('mounted')
+        })
+          
+        //setup() === created()  
+        fetch("https://my-json-server.typicode.com/iosamuel/demo/products")
+          .then(res => res.json())
+          .then(data => {
+            products.value = data;
+          })
+
+        return {
+          ...toRefs(cartState),
+          total,
+          addToCart,
+          products,
+          filtro,
+          filteredProducts
+        };
+      }
+    }); 
+  </script>
+  <script src="./Badge.js"></script>
+  <script src="./Product.js"></script>
+  <script>
+    app.mount("#app");
+  </script>
+</body>
+</html>

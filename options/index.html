@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlatziCommerce</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        font-size: 18px;
+      }
+      * {
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0;
+      }
+      header {
+        display: flex;
+        height: 40px;
+        justify-content: space-between;
+        align-items: center;
+        background: rgb(104, 104, 209);
+        color: #fefefe;
+      }
+      header h3 {
+        margin-left: 8px;
+      }
+      header .cart {
+        background: rgb(82, 82, 194);
+        padding: 8px;
+        color: white;
+        border: none;
+        height: 100%;
+        cursor: pointer;
+        outline: none;
+      }
+      header .cart-content {
+        position: absolute;
+        right: 0;
+        top: 40px;
+        background: white;
+        padding: 16px;
+        color: black;
+        border-bottom: 1px solid black;
+        border-left: 1px solid black;
+        border-bottom-left-radius: 14px;
+        border-bottom-right-radius: 14px;
+      }
+      header .cart-content .cart-content__product {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        border-radius: 8px;
+        background: rgb(129, 129, 129, 0.2);
+        margin-bottom: 4px;
+      }
+      header .cart-content .cart-content__product.bg-gray {
+        background: rgb(129, 129, 129, 0.4);
+      }
+      header .cart-content .cart-content__product img {
+        width: 50px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        padding: 16px;
+      }
+
+      main .product {
+        display: grid;
+        grid-template-columns: 0.2fr 0.8fr;
+      }
+
+      main .product .product__thumbnails {
+        width: 90px;
+      }
+      main .product .product__thumbnails .thumb {
+        width: 100%;
+        height: 90px;
+        background-repeat: no-repeat;
+        background-position: center;
+        margin-bottom: 8px;
+      }
+      main .product .product__thumbnails .thumb.active {
+        border-bottom: 1px solid rgb(82, 82, 194);
+      }
+
+      main .description h4 {
+        display: inline-block;
+        font-size: 24px;
+      }
+      main .description .description__status {
+        font-size: 16px;
+        font-weight: lighter;
+        color: rgb(129, 129, 129);
+      }
+      main .description .description__price {
+        font-weight: bold;
+        color: rgb(104, 104, 209);
+      }
+      main .description .description__content {
+        margin-top: 8px;
+      }
+      main .description .discount {
+        margin: 8px 0 8px 0;
+      }
+      main .description .discount span {
+        font-size: 14px;
+        margin-right: 8px;
+      }
+      main .description .discount input {
+        padding: 8px;
+        border: 1px solid #616161;
+        border-radius: 4px;
+      }
+      main .description button {
+        padding: 8px;
+        font-size: 18px;
+        background: rgb(104, 104, 209);
+        color: #fefefe;
+        border: none;
+        border-radius: 8px;
+      }
+      main .description button:disabled {
+        background: rgb(159, 159, 228);
+      }
+      .badge {
+        font-size: 14px;
+        font-weight: normal;
+        padding: 8px;
+        border-radius: 8px;
+        color: white;
+        margin-right: 4px;
+        vertical-align: text-top;
+      }
+      .badge.new {
+        background-color: rgb(103, 172, 13);
+      }
+      .badge.offer {
+        background-color: rgb(197, 107, 33);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h3>PlatziCommerce</h3>
+        <button class="cart" v-on:click="cartOpen = !cartOpen">Carro ({{ cart.length }})</button>
+        <div class="cart-content" v-show="cartOpen">
+          <div
+            v-for="(prodCart, index) in cart"
+            :key="prodCart.name"
+            class="cart-content__product"
+            :class="{ 'bg-gray': index & 1 }"
+          >
+            <img v-bind:src="prodCart.images[0].thumbnail" :alt="prodCart.name.toUpperCase()" />
+            <span>
+              {{ prodCart.name }} - $ {{ new Intl.NumberFormat("es-CO").format(prodCart.price *
+              prodCart.quantity) }} ({{ prodCart.quantity }})
+            </span>
+          </div>
+          <p>Total: $ {{ new Intl.NumberFormat("es-CO").format(total) }}</p>
+        </div>
+      </header>
+      <main>
+        <product v-for="product in products" :key="product.name" :product="product" @sendtocart="addToCart($event)"></product>
+      </main>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+      const { createApp } = Vue;
+
+      const app = createApp({
+        data() {
+          return {
+            products: [],
+            cartOpen: true,
+            // total: 0,
+            cart: []
+          };
+        },
+        methods: {
+          addToCart(product) {
+            const prodIndex = this.cart.findIndex(prod => prod.name === product.name);
+            if (prodIndex >= 0) {
+              this.cart[prodIndex].quantity += 1;
+            } else {
+              this.cart.push(product);
+            }
+            product.stock -= 1;
+          }
+        },
+        watch: {
+          // cart: {
+          //   handler(cart) {
+          //     this.total = cart.reduce((prev, curr) => {
+          //     const prevPrice = prev.price || prev;
+          //     const prevQuantity = prev.quantity || 1;
+          //     return prevPrice * prevQuantity + curr.price * curr.quantity;
+          //     }, 0);
+          //   },
+          //   deep: true
+          // }
+        },
+        computed: {
+          total() {
+            return this.cart.reduce((prev, curr) => {
+              const prevPrice = prev.price || prev;
+              const prevQuantity = prev.quantity || 1;
+              return prevPrice * prevQuantity + curr.price * curr.quantity;
+              }, 0);
+          }
+        },
+        created() {
+          fetch("https://my-json-server.typicode.com/iosamuel/demo/products")
+          .then(res => res.json())
+          .then(data => {
+            this.products = data;
+          })
+        }
+      });
+    </script>
+    <script src="./Badge.js"></script>
+    <script src="./Product.js"></script>
+
+    <script>
+      app.mount("#app");
+    </script>
+  </body>
+</html>
